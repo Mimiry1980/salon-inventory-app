@@ -1,0 +1,9 @@
+timestamp: 2026-03-08T13:42:25
+bars: 2781
+tests: 1000
+constrained: 899
+best_oos_monthly: 0.026862551638207055
+best_oos_mdd: -0.0062421548481029765
+best_oos_pf: 4.437325469234002
+best_oos_trades: 8
+best_params: {'ema_fast': 36, 'ema_slow': 146, 'breakout_len': 41, 'atr_len': 21, 'atr_sl_mult': 1.58, 'rr': 3.27, 'vol_len': 15, 'vol_factor': 0.93}
