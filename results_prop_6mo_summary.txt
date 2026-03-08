@@ -1,0 +1,10 @@
+timestamp: 2026-03-08T09:33:51
+bars: 2781
+period_days: 180
+tests_kept: 3531
+constrained: 3410
+best_oos_monthly: 0.01570417500260124
+best_oos_dd: 0.0
+best_wf_pass_rate: 0.0
+best_mc_prob_dd_breach: nan
+best_params: {'ema_fast': 52, 'ema_slow': 238, 'atr_len': 16, 'rr': 2.4457681534111106, 'atr_sl_mult': 1.6072906919442682, 'range_lookback': 10, 'range_atr_factor': 2.194042864295073, 'min_atr_pct': 0.3191642856305432}
