@@ -1,0 +1,11 @@
+timestamp: 2026-03-08T08:58:10
+rounds_run: 1
+tests_total: 1000
+target_monthly: 0.07
+target_max_dd: 0.03
+achieved_target: True
+best_oos_monthly: 0.07522340578302011
+best_oos_mdd: -0.008136351780576923
+best_oos_pf: 2.4828429548698088
+best_round: 1
+best_params: {'ema_fast': 78, 'ema_slow': 250, 'atr_len': 25, 'rr': 3.0973165983385806, 'atr_sl_mult': 1.7294888209403663, 'range_lookback': 9, 'range_atr_factor': 1.9582821599619962, 'min_atr_pct': 0.12178260891621136}
