@@ -1,0 +1,13 @@
+timestamp: 2026-03-08T17:19:34
+symbol_proxy: YM=F
+interval: 15m
+period: 60d
+htf_ema_fast: 20
+htf_ema_slow: 50
+htf_strong_gap_pct: 0.0012
+trades: 25
+win_rate: 0.4
+profit_factor: 0.5276180101459033
+total_return: -0.015568203153923488
+monthly_return: -0.010566509940127644
+max_dd: -0.024221145592433047
