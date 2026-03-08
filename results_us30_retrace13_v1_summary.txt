@@ -1,0 +1,10 @@
+timestamp: 2026-03-08T16:22:38
+symbol_proxy: YM=F
+interval: 15m
+period: 60d
+trades: 51
+win_rate: 0.29411764705882354
+profit_factor: 0.5859467565228486
+total_return: -0.04345277467551756
+monthly_return: -0.02962845396922764
+max_dd: -0.04345277467551756
