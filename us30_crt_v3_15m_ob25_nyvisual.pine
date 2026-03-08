@@ -1,0 +1,168 @@
+//@version=6
+strategy("US30 CRT v3 15m OB25 + NY Visual (MIMIR)", overlay=true, initial_capital=50000, pyramiding=0, commission_type=strategy.commission.percent, commission_value=0.01)
+
+// ========================
+// Core Inputs
+// ========================
+use4hFilter     = input.bool(true, "Use 4H Trend Filter")
+emaFastLen      = input.int(78, "4H EMA Fast", minval=1)
+emaSlowLen      = input.int(250, "4H EMA Slow", minval=1)
+
+atrLen          = input.int(25, "ATR Length", minval=1)
+atrStrongMult   = input.float(0.8, "Strong Candle Body >= ATR *", step=0.1)
+rangeLookback   = input.int(9, "Range Lookback", minval=2)
+rangeAtrFactor  = input.float(1.9583, "Range ATR Factor", step=0.0001)
+minAtrPct       = input.float(0.1218, "Min ATR %", step=0.0001)
+
+rr              = input.float(3.0973, "Risk:Reward", step=0.0001)
+atrSlMult       = input.float(1.7295, "ATR SL Mult", step=0.0001)
+riskPct         = input.float(0.25, "Risk % per trade", step=0.01)
+maxLots         = input.float(6.0, "Max lots/contracts", step=0.1)
+
+confirmBars     = input.int(3, "N bars to confirm reclaim", minval=1, maxval=10)
+entryRetracePct = input.float(25.0, "OB retrace % (25 = aggressive)", minval=1, maxval=50, step=1)
+
+// ========================
+// NY Session visual only
+// ========================
+showNyVisual = input.bool(true, "Show NY session visual")
+nySession    = input.session("0930-1600", "NY Session (ET)")
+inNy         = not na(time(timeframe.period, nySession, "America/New_York"))
+
+bgcolor(showNyVisual and inNy ? color.new(color.blue, 90) : na)
+
+newDay = ta.change(time("D", "America/New_York")) != 0
+var float nyHigh = na
+var float nyLow  = na
+
+if newDay
+    nyHigh := na
+    nyLow  := na
+
+if inNy
+    nyHigh := na(nyHigh) ? high : math.max(nyHigh, high)
+    nyLow  := na(nyLow)  ? low  : math.min(nyLow, low)
+
+plot(showNyVisual ? nyHigh : na, "NY High", color=color.new(color.aqua, 0), linewidth=1, style=plot.style_linebr)
+plot(showNyVisual ? nyLow  : na, "NY Low",  color=color.new(color.orange, 0), linewidth=1, style=plot.style_linebr)
+
+// ========================
+// MTF trend context
+// ========================
+htfClose   = request.security(syminfo.tickerid, "240", close, lookahead=barmerge.lookahead_off)
+htfEmaFast = request.security(syminfo.tickerid, "240", ta.ema(close, emaFastLen), lookahead=barmerge.lookahead_off)
+htfEmaSlow = request.security(syminfo.tickerid, "240", ta.ema(close, emaSlowLen), lookahead=barmerge.lookahead_off)
+
+bull4h = htfClose > htfEmaFast and htfEmaFast > htfEmaSlow
+bear4h = htfClose < htfEmaFast and htfEmaFast < htfEmaSlow
+
+allowLongTrend  = use4hFilter ? bull4h : true
+allowShortTrend = use4hFilter ? bear4h : true
+
+// ========================
+// 15m structure + signals
+// ========================
+atrv    = ta.atr(atrLen)
+atrPct  = (atrv / close) * 100.0
+
+rangeHigh = ta.highest(high, rangeLookback)
+rangeLow  = ta.lowest(low, rangeLookback)
+rangeSize = rangeHigh - rangeLow
+validRange = rangeSize > (atrv * rangeAtrFactor)
+
+allowVol = atrPct >= minAtrPct
+
+// Strong candle definition on previous bar (OB base)
+body1       = math.abs(close[1] - open[1])
+strongPrev  = body1 >= (atrv[1] * atrStrongMult)
+
+// Bullish OB candidate: previous candle bearish and strong
+bullObCand  = strongPrev and close[1] < open[1]
+// Bearish OB candidate: previous candle bullish and strong
+bearObCand  = strongPrev and close[1] > open[1]
+
+// OB levels from previous candle
+bullObHigh = high[1]
+bullObLow  = low[1]
+bearObHigh = high[1]
+bearObLow  = low[1]
+
+// 25% retrace from OB edge toward midpoint
+retr = entryRetracePct / 100.0
+bullEntryZone = bullObLow + (bullObHigh - bullObLow) * retr
+bearEntryZone = bearObHigh - (bearObHigh - bearObLow) * retr
+
+// Sweep + reclaim logic (fractal 15m)
+// Long idea: prev bar sweeps below recent range low, and current/recent closes reclaim above OB high
+sweepDownPrev = low[1] < rangeLow[2]
+// Short idea: prev bar sweeps above recent range high, and current/recent closes reclaim below OB low
+sweepUpPrev   = high[1] > rangeHigh[2]
+
+reclaimLong = ta.barssince(close > bullObHigh) <= confirmBars - 1
+reclaimShort = ta.barssince(close < bearObLow) <= confirmBars - 1
+
+longSignal  = validRange and allowVol and bullObCand and sweepDownPrev and reclaimLong and close >= bullEntryZone
+shortSignal = validRange and allowVol and bearObCand and sweepUpPrev and reclaimShort and close <= bearEntryZone
+
+longEntryCond  = allowLongTrend and longSignal
+shortEntryCond = allowShortTrend and shortSignal
+
+// Stops
+longStructSL  = math.min(low[1], rangeLow[1])
+shortStructSL = math.max(high[1], rangeHigh[1])
+
+longSLraw  = math.min(longStructSL, close - atrv * atrSlMult)
+shortSLraw = math.max(shortStructSL, close + atrv * atrSlMult)
+
+// ========================
+// Risk-based sizing + max lots cap
+// ========================
+calcQty(entryPrice, stopPrice) =>
+    riskCash = strategy.equity * (riskPct / 100.0)
+    stopDist = math.abs(entryPrice - stopPrice)
+    qtyRisk  = stopDist > 0 ? (riskCash / stopDist) : 0.0
+    qtyFinal = math.min(qtyRisk, maxLots)
+    qtyFinal
+
+// ========================
+// Orders
+// ========================
+canLong  = longEntryCond and strategy.position_size == 0 and longSLraw < close
+canShort = shortEntryCond and strategy.position_size == 0 and shortSLraw > close
+
+if canLong
+    entryL = close
+    slL    = longSLraw
+    tpL    = entryL + (entryL - slL) * rr
+    qtyL   = calcQty(entryL, slL)
+    if qtyL > 0
+        strategy.entry("Long", strategy.long, qty=qtyL)
+        strategy.exit("Long TP/SL", "Long", stop=slL, limit=tpL)
+
+if canShort
+    entryS = close
+    slS    = shortSLraw
+    tpS    = entryS - (slS - entryS) * rr
+    qtyS   = calcQty(entryS, slS)
+    if qtyS > 0
+        strategy.entry("Short", strategy.short, qty=qtyS)
+        strategy.exit("Short TP/SL", "Short", stop=slS, limit=tpS)
+
+// ========================
+// Visual aids
+// ========================
+plot(rangeHigh, "Range High", color=color.new(color.green, 75))
+plot(rangeLow,  "Range Low",  color=color.new(color.red, 75))
+
+plotshape(longEntryCond, title="Long Signal", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="L")
+plotshape(shortEntryCond, title="Short Signal", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.tiny, text="S")
+
+// Info label (last bar only)
+if barstate.islast
+    var label info = na
+    label.delete(info)
+    txt = "Risk %: " + str.tostring(riskPct, format.mintick) +
+      "\nMax lots: " + str.tostring(maxLots, format.mintick) +
+      "\nConfirm bars: " + str.tostring(confirmBars) +
+      "\nOB retrace %: " + str.tostring(entryRetracePct)
+    info := label.new(bar_index, high, txt, style=label.style_label_left, textcolor=color.white, color=color.new(color.black, 20))
