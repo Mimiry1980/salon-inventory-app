@@ -1,0 +1,14 @@
+timestamp: 2026-03-08T17:14:15
+symbol_proxy: YM=F
+interval: 15m
+period: 60d
+cooldown_bars_after_loss: 4
+compression_lookback: 6
+compression_range_atr_max: 1.1
+compression_wicky_threshold: 0.45
+trades: 31
+win_rate: 0.45161290322580644
+profit_factor: 0.7594474814695295
+total_return: -0.00828970132829665
+monthly_return: -0.005619750565955983
+max_dd: -0.02202979424978868
