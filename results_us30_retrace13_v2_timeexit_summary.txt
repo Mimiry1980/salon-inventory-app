@@ -1,0 +1,12 @@
+timestamp: 2026-03-08T17:01:52
+symbol_proxy: YM=F
+interval: 15m
+period: 60d
+session_ny: 09:30-16:00
+time_exit: close_position_at_or_after_ny_close
+trades: 46
+win_rate: 0.391304347826087
+profit_factor: 0.668980659157317
+total_return: -0.020944999849739854
+monthly_return: -0.014228384135967387
+max_dd: -0.029484706188341203
