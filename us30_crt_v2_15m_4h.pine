@@ -1,0 +1,99 @@
+//@version=5
+strategy("US30 CRT v2 (15m + 4h Bias, Anti-Bias)", overlay=true, initial_capital=10000, pyramiding=0,
+     commission_type=strategy.commission.percent, commission_value=0.01, calc_on_order_fills=true)
+
+// =========================
+// Inputs
+// =========================
+htfTf          = input.timeframe("240", "HTF timeframe")
+emaFastLen     = input.int(50, "HTF EMA fast", minval=5)
+emaSlowLen     = input.int(200, "HTF EMA slow", minval=20)
+atrLen         = input.int(14, "ATR length", minval=5)
+riskReward     = input.float(2.2, "Risk:Reward", step=0.1)
+atrSLMult      = input.float(1.0, "SL ATR multiplier", step=0.1)
+rangeLookback  = input.int(16, "Range lookback", minval=5)
+rangeAtrFactor = input.float(1.4, "Min range size (x ATR)", step=0.1)
+
+useSession     = input.bool(true, "Use NY session filter")
+sessionNY      = input.session("0930-1200", "NY session")
+
+useVolFilter   = input.bool(true, "Use volatility filter")
+minAtrPct      = input.float(0.12, "Min ATR% of price", step=0.01)
+
+// =========================
+// Helpers
+// =========================
+inSession = not na(time(timeframe.period, sessionNY))
+atr = ta.atr(atrLen)
+atrPct = atr / close * 100.0
+
+// NO LOOKAHEAD: explicitly off
+htfClose   = request.security(syminfo.tickerid, htfTf, close, barmerge.gaps_off, barmerge.lookahead_off)
+htfEmaFast = request.security(syminfo.tickerid, htfTf, ta.ema(close, emaFastLen), barmerge.gaps_off, barmerge.lookahead_off)
+htfEmaSlow = request.security(syminfo.tickerid, htfTf, ta.ema(close, emaSlowLen), barmerge.gaps_off, barmerge.lookahead_off)
+
+bullBias = htfClose > htfEmaFast and htfEmaFast > htfEmaSlow
+bearBias = htfClose < htfEmaFast and htfEmaFast < htfEmaSlow
+
+allowSession = useSession ? inSession : true
+allowVol     = useVolFilter ? (atrPct >= minAtrPct) : true
+
+// =========================
+// CRT proxy setup (sweep + reclaim + confirmation)
+// =========================
+rangeHigh = ta.highest(high, rangeLookback)
+rangeLow  = ta.lowest(low, rangeLookback)
+rangeSize = rangeHigh - rangeLow
+validRange = rangeSize > (atr * rangeAtrFactor)
+
+// Sweep conditions on prior bar to avoid same-bar bias
+longSweepPrev  = low[1] < rangeLow[2]
+longReclaimNow = close > rangeLow[2] and close > open
+
+shortSweepPrev  = high[1] > rangeHigh[2]
+shortReclaimNow = close < rangeHigh[2] and close < open
+
+longSignal  = validRange and longSweepPrev and longReclaimNow
+shortSignal = validRange and shortSweepPrev and shortReclaimNow
+
+longEntry  = allowSession and allowVol and bullBias and longSignal
+shortEntry = allowSession and allowVol and bearBias and shortSignal
+
+// =========================
+// Stops/Targets (structure + ATR)
+// =========================
+longStructSL  = math.min(low[1], rangeLow[1])
+shortStructSL = math.max(high[1], rangeHigh[1])
+
+longSL  = math.min(longStructSL, close - atr * atrSLMult)
+shortSL = math.max(shortStructSL, close + atr * atrSLMult)
+
+longRisk  = close - longSL
+shortRisk = shortSL - close
+
+longTP  = close + longRisk * riskReward
+shortTP = close - shortRisk * riskReward
+
+validLongRisk  = longRisk > syminfo.mintick * 5
+validShortRisk = shortRisk > syminfo.mintick * 5
+
+if longEntry and validLongRisk and strategy.position_size <= 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long", stop=longSL, limit=longTP)
+
+if shortEntry and validShortRisk and strategy.position_size >= 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short", stop=shortSL, limit=shortTP)
+
+// =========================
+// Visuals
+// =========================
+plot(htfEmaFast, "HTF EMA fast", color=color.orange)
+plot(htfEmaSlow, "HTF EMA slow", color=color.blue)
+plot(rangeHigh, "Range High", color=color.new(color.red, 65))
+plot(rangeLow, "Range Low", color=color.new(color.green, 65))
+
+plotshape(longEntry, title="L", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny, text="L")
+plotshape(shortEntry, title="S", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.tiny, text="S")
+
+bgcolor(useSession and inSession ? color.new(color.blue, 93) : na)
