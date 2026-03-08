@@ -1,0 +1,7 @@
+timestamp: 2026-03-08T18:28:29
+tests: 2000
+best_profit_factor: 1.6655942829425692
+best_monthly_return: 0.024142149756801956
+best_max_dd: -0.008297595306191563
+best_trades: 57
+best_params: {'pivot_w': 3, 'rr': 1.5, 'sl_points': 120.0, 'max_trades_day': 3, 'no_new_last_min': 30, 'wait_open': 15, 'dt_tol': 0.001, 'db_tol': 0.0008, 'min_bars': 5, 'max_bars': 24, 'cooldown': 6}
