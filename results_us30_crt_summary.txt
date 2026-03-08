@@ -1,0 +1,7 @@
+timestamp: 2026-03-08T08:48:48
+rows_total: 1000
+rows_constrained: 240
+best_oos_monthly: 0.04961563346585618
+best_oos_mdd: -0.008109742430939093
+best_oos_pf: 2.119575765317236
+best_params: {'ema_fast': 42.0, 'ema_slow': 164.0, 'atr_len': 26.0, 'rr': 2.68, 'atr_sl_mult': 1.81, 'range_lookback': 13.0, 'range_atr_factor': 1.91, 'min_atr_pct': 0.139}
