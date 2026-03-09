@@ -1,0 +1,125 @@
+//@version=6
+strategy("US30 Hybrid Best So Far (5m+15m)", overlay=true, pyramiding=0, initial_capital=50000)
+
+// Best-so-far params from optimization
+pivotW = input.int(3, "Pivot width")
+rr = input.float(1.5, "RR", step=0.1)
+slPoints = input.float(120, "SL points", step=10)
+maxTradesDay = input.int(3, "Max trades/day")
+noNewLastMin = input.int(30, "No new trades last X min")
+waitOpenMin = input.int(15, "Wait after 9:30")
+dtTol = input.float(0.0010, "DT tolerance", step=0.0001)
+dbTol = input.float(0.0008, "DB tolerance", step=0.0001)
+minBarsBetween = input.int(5, "Min bars between pivots")
+maxBarsBetween = input.int(24, "Max bars between pivots")
+cooldownBars = input.int(6, "Cooldown bars after loss")
+
+hNY = hour(time, "America/New_York")
+mNY = minute(time, "America/New_York")
+minsNow = hNY * 60 + mNY
+nyOpen = 9 * 60 + 30
+nyClose = 16 * 60
+inSession = minsNow >= nyOpen and minsNow < nyClose
+minsToClose = nyClose - minsNow
+waitedOpen = minsNow >= (nyOpen + waitOpenMin)
+allowNewTime = inSession and minsToClose > noNewLastMin and waitedOpen
+
+newDay = ta.change(time("D")) != 0
+var int tradesToday = 0
+if newDay
+    tradesToday := 0
+
+openedNow = strategy.position_size != 0 and strategy.position_size[1] == 0
+if openedNow
+    tradesToday := tradesToday + 1
+
+canTradeCount = tradesToday < maxTradesDay
+
+var int cooldown = 0
+if cooldown > 0
+    cooldown := cooldown - 1
+
+closedNow = strategy.position_size == 0 and strategy.position_size[1] != 0
+if closedNow
+    pnlDelta = strategy.netprofit - strategy.netprofit[1]
+    if pnlDelta < 0
+        cooldown := cooldownBars
+
+canTradeCooldown = cooldown == 0
+
+// 15m confirmation
+c15 = request.security(syminfo.tickerid, "15", close)
+o15 = request.security(syminfo.tickerid, "15", open)
+ema15 = request.security(syminfo.tickerid, "15", ta.ema(close, 20))
+bear15 = (c15 < o15) and (c15 < ema15)
+bull15 = (c15 > o15) and (c15 > ema15)
+
+// pivots on 5m
+ph = ta.pivothigh(high, pivotW, pivotW)
+pl = ta.pivotlow(low, pivotW, pivotW)
+
+isPH = not na(ph)
+isPL = not na(pl)
+
+var float prevPH = na
+var float lastPH = na
+var int prevPHBar = na
+var int lastPHBar = na
+
+var float prevPL = na
+var float lastPL = na
+var int prevPLBar = na
+var int lastPLBar = na
+
+if isPH
+    prevPH := lastPH
+    prevPHBar := lastPHBar
+    lastPH := ph
+    lastPHBar := bar_index - pivotW
+
+if isPL
+    prevPL := lastPL
+    prevPLBar := lastPLBar
+    lastPL := pl
+    lastPLBar := bar_index - pivotW
+
+validDT = not na(prevPH) and not na(lastPH) and (lastPHBar - prevPHBar >= minBarsBetween) and (lastPHBar - prevPHBar <= maxBarsBetween)
+validDB = not na(prevPL) and not na(lastPL) and (lastPLBar - prevPLBar >= minBarsBetween) and (lastPLBar - prevPLBar <= maxBarsBetween)
+
+avgTop = (prevPH + lastPH) * 0.5
+avgBot = (prevPL + lastPL) * 0.5
+
+topsClose = validDT and avgTop > 0 and (math.abs(lastPH - prevPH) / avgTop <= dtTol)
+botsClose = validDB and avgBot > 0 and (math.abs(lastPL - prevPL) / avgBot <= dbTol)
+
+lenDT = validDT ? math.max(1, lastPHBar - prevPHBar + 1) : 1
+lenDB = validDB ? math.max(1, lastPLBar - prevPLBar + 1) : 1
+
+necklineDT = validDT ? ta.lowest(low, lenDT) : na
+necklineDB = validDB ? ta.highest(high, lenDB) : na
+
+shortSignal = topsClose and bear15 and close < necklineDT
+longSignal = botsClose and bull15 and close > necklineDB
+
+finalShort = shortSignal and allowNewTime and canTradeCount and canTradeCooldown
+finalLong = longSignal and allowNewTime and canTradeCount and canTradeCooldown
+
+if finalShort and strategy.position_size >= 0
+    strategy.entry("S", strategy.short)
+
+if finalLong and strategy.position_size <= 0
+    strategy.entry("L", strategy.long)
+
+longSL = strategy.position_avg_price - slPoints
+longTP = strategy.position_avg_price + slPoints * rr
+shortSL = strategy.position_avg_price + slPoints
+shortTP = strategy.position_avg_price - slPoints * rr
+
+strategy.exit("LX", "L", stop=longSL, limit=longTP)
+strategy.exit("SX", "S", stop=shortSL, limit=shortTP)
+
+if minsNow >= nyClose
+    strategy.close_all()
+
+plotshape(finalLong, title="L", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.tiny)
+plotshape(finalShort, title="S", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.tiny)
