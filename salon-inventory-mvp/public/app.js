@@ -9,14 +9,49 @@ const I18N = {
     common: { save: 'Guardar', clear: 'Limpiar', edit: 'Editar', del: 'Eliminar', yesDelete: '¿Eliminar producto?' },
     kpi: { products: 'Productos', units: 'Unidades', low: 'Stock bajo', today: 'Mov. hoy', value: 'Valor inventario' },
     movementType: { entrada: 'Entrada', salida_venta: 'Salida venta', salida_uso_interno: 'Uso interno' },
+    product: { formTitle: 'Nuevo / Editar producto', catalog: 'Catálogo' },
+    movement: { quick: 'Atajos rápidos', quickSub: 'Selecciona producto y registra en 1 toque.', title: 'Registrar movimiento', submit: 'Registrar', history: 'Historial reciente' },
+    alerts: { low: 'Stock bajo', suggested: 'Compras sugeridas' },
     labels: {
+      loginSubtitle: 'Inicia sesión para continuar',
+      username: 'Usuario',
+      password: 'Contraseña',
+      loginBtn: 'Entrar',
       quickBtn: '+ Movimiento',
       logout: 'Salir',
+      export: 'Exportar Excel',
+      productName: 'Nombre',
+      brand: 'Marca',
+      category: 'Categoría',
+      barcode: 'Código de barras',
+      scan: '📷 Escanear',
+      unit: 'Unidad',
+      cost: 'Costo',
+      salePrice: 'Precio venta',
+      initialStock: 'Stock inicial',
+      minStock: 'Stock mínimo',
+      targetStock: 'Stock objetivo',
+      closeScanner: 'Cerrar scanner',
       search: 'Buscar por nombre/marca/categoría',
       qty: 'Cantidad',
       notes: 'Notas',
       noProducts: 'No hay productos todavía. Crea uno en la pestaña Productos.',
-      export: 'Export Excel'
+      noAlerts: 'Sin alertas ✅',
+      noSuggestions: 'Sin compras sugeridas ✅',
+      total: 'Total',
+      stock: 'Stock',
+      min: 'Mínimo',
+      target: 'Objetivo',
+      actions: 'Acciones',
+      date: 'Fecha',
+      product: 'Producto',
+      type: 'Tipo',
+      qtyShort: 'Cant.',
+      user: 'Usuario',
+      open: 'Abrir',
+      saleMinus: 'Venta -1',
+      internalMinus: 'Uso -1',
+      inPlus: 'Entrada +1'
     }
   },
   en: {
@@ -27,14 +62,49 @@ const I18N = {
     common: { save: 'Save', clear: 'Clear', edit: 'Edit', del: 'Delete', yesDelete: 'Delete product?' },
     kpi: { products: 'Products', units: 'Units', low: 'Low stock', today: 'Moves today', value: 'Inventory value' },
     movementType: { entrada: 'Stock In', salida_venta: 'Sale Out', salida_uso_interno: 'Internal Use' },
+    product: { formTitle: 'New / Edit product', catalog: 'Catalog' },
+    movement: { quick: 'Quick actions', quickSub: 'Select a product and record in one tap.', title: 'Record movement', submit: 'Save movement', history: 'Recent history' },
+    alerts: { low: 'Low stock', suggested: 'Suggested purchases' },
     labels: {
+      loginSubtitle: 'Sign in to continue',
+      username: 'Username',
+      password: 'Password',
+      loginBtn: 'Login',
       quickBtn: '+ Movement',
       logout: 'Logout',
+      export: 'Export Excel',
+      productName: 'Name',
+      brand: 'Brand',
+      category: 'Category',
+      barcode: 'Barcode',
+      scan: '📷 Scan',
+      unit: 'Unit',
+      cost: 'Cost',
+      salePrice: 'Sale price',
+      initialStock: 'Initial stock',
+      minStock: 'Minimum stock',
+      targetStock: 'Target stock',
+      closeScanner: 'Close scanner',
       search: 'Search by name/brand/category',
       qty: 'Quantity',
       notes: 'Notes',
       noProducts: 'No products yet. Create one in the Products tab.',
-      export: 'Export Excel'
+      noAlerts: 'No alerts ✅',
+      noSuggestions: 'No suggested purchases ✅',
+      total: 'Total',
+      stock: 'Stock',
+      min: 'Min',
+      target: 'Target',
+      actions: 'Actions',
+      date: 'Date',
+      product: 'Product',
+      type: 'Type',
+      qtyShort: 'Qty',
+      user: 'User',
+      open: 'Open',
+      saleMinus: 'Sale -1',
+      internalMinus: 'Internal -1',
+      inPlus: 'In +1'
     }
   },
 };
@@ -75,12 +145,31 @@ function setLang(lang) {
     if (typeof value === 'string') el.textContent = value;
   });
 
+  $('loginSubtitle').textContent = t().labels.loginSubtitle;
+  $('username').placeholder = t().labels.username;
+  $('password').placeholder = t().labels.password;
+  $('loginBtn').textContent = t().labels.loginBtn;
+
   $('openQuickMovement').textContent = t().labels.quickBtn;
   $('logoutBtn').textContent = t().labels.logout;
+  $('exportExcelBtn').textContent = t().labels.export;
+
+  $('name').placeholder = t().labels.productName;
+  $('brand').placeholder = t().labels.brand;
+  $('category').placeholder = t().labels.category;
+  $('barcode').placeholder = t().labels.barcode;
+  $('scanBtn').textContent = t().labels.scan;
+  $('unit').placeholder = t().labels.unit;
+  $('cost').placeholder = t().labels.cost;
+  $('sale_price').placeholder = t().labels.salePrice;
+  $('initial_stock').placeholder = t().labels.initialStock;
+  $('min_stock').placeholder = t().labels.minStock;
+  $('target_stock').placeholder = t().labels.targetStock;
+  $('closeScanner').textContent = t().labels.closeScanner;
+
   $('searchProduct').placeholder = t().labels.search;
   $('movement_qty').placeholder = t().labels.qty;
   $('movement_notes').placeholder = t().labels.notes;
-  $('exportExcelBtn').textContent = t().labels.export;
 
   const mt = $('movement_type');
   mt.querySelector('option[value="entrada"]').textContent = t().movementType.entrada;
@@ -129,7 +218,7 @@ function renderProducts(products) {
   const search = $('searchProduct').value?.toLowerCase() || '';
   const rows = products.filter((p) => `${p.name} ${p.brand} ${p.category}`.toLowerCase().includes(search));
   $('productsTable').innerHTML = `
-    <tr><th>Producto</th><th>Categoría</th><th>Stock</th><th>Min</th><th>Objetivo</th><th></th></tr>
+    <tr><th>${t().labels.product}</th><th>${t().labels.category}</th><th>${t().labels.stock}</th><th>${t().labels.min}</th><th>${t().labels.target}</th><th>${t().labels.actions}</th></tr>
     ${rows
       .map(
         (p) => `<tr>
@@ -163,35 +252,35 @@ function renderProductsSelect(products) {
   $('movement_qty').disabled = false;
   $('movement_notes').disabled = false;
   $('movementForm').querySelector('button[type="submit"]').disabled = false;
-  sel.innerHTML = products.map((p) => `<option value="${p.id}">${p.name} (stock: ${p.current_stock})</option>`).join('');
+  sel.innerHTML = products.map((p) => `<option value="${p.id}">${p.name} (${t().labels.stock}: ${p.current_stock})</option>`).join('');
 }
 
 function renderMovements(rows) {
   $('movementsTable').innerHTML = `
-    <tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cant.</th><th>User</th><th>Notas</th></tr>
+    <tr><th>${t().labels.date}</th><th>${t().labels.product}</th><th>${t().labels.type}</th><th>${t().labels.qtyShort}</th><th>${t().labels.user}</th><th>${t().labels.notes}</th></tr>
     ${rows.map((m) => `<tr><td>${formatDate(m.created_at)}</td><td>${m.product_name}</td><td><span class='badge'>${t().movementType[m.type] || m.type}</span></td><td>${m.qty}</td><td>${m.created_by || '-'}</td><td>${m.notes || ''}</td></tr>`).join('')}
   `;
 }
 
 function renderAlerts(rows) {
-  $('alertsTable').innerHTML = `<tr><th>Producto</th><th>Stock</th><th>Mínimo</th></tr>${rows.map((p) => `<tr><td>${p.name}</td><td class='stock-low'>${p.current_stock}</td><td>${p.min_stock}</td></tr>`).join('') || '<tr><td colspan="3">Sin alertas ✅</td></tr>'}`;
+  $('alertsTable').innerHTML = `<tr><th>${t().labels.product}</th><th>${t().labels.stock}</th><th>${t().labels.min}</th></tr>${rows.map((p) => `<tr><td>${p.name}</td><td class='stock-low'>${p.current_stock}</td><td>${p.min_stock}</td></tr>`).join('') || `<tr><td colspan="3">${t().labels.noAlerts}</td></tr>`}`;
 }
 
 function renderSuggestions(rows) {
   const total = rows.reduce((a, x) => a + Number(x.estimated_cost || 0), 0);
   $('suggestionsTable').innerHTML = `
-    <tr><th>Producto</th><th>Sugerido</th><th>Stock</th><th>Costo</th></tr>
-    ${rows.map((s) => `<tr><td>${s.name}</td><td>${s.suggested_qty}</td><td>${s.current_stock}</td><td>${money(s.estimated_cost)}</td></tr>`).join('') || '<tr><td colspan="4">Sin compras sugeridas ✅</td></tr>'}
-    <tr><td colspan="3"><b>Total</b></td><td><b>${money(total)}</b></td></tr>
+    <tr><th>${t().labels.product}</th><th>${state.lang === 'es' ? 'Sugerido' : 'Suggested'}</th><th>${t().labels.stock}</th><th>${t().labels.cost}</th></tr>
+    ${rows.map((s) => `<tr><td>${s.name}</td><td>${s.suggested_qty}</td><td>${s.current_stock}</td><td>${money(s.estimated_cost)}</td></tr>`).join('') || `<tr><td colspan="4">${t().labels.noSuggestions}</td></tr>`}
+    <tr><td colspan="3"><b>${t().labels.total}</b></td><td><b>${money(total)}</b></td></tr>
   `;
 }
 
 function renderQuickProducts(products) {
   const top = [...products].sort((a, b) => (a.current_stock - a.min_stock) - (b.current_stock - b.min_stock)).slice(0, 8);
   $('quickMovement').innerHTML = `
-    <button class="${state.quickType === 'salida_venta' ? '' : 'secondary'}" onclick="setQuickType('salida_venta')">${state.lang === 'es' ? 'Venta -1' : 'Sale -1'}</button>
-    <button class="${state.quickType === 'salida_uso_interno' ? '' : 'secondary'}" onclick="setQuickType('salida_uso_interno')">${state.lang === 'es' ? 'Uso -1' : 'Internal -1'}</button>
-    <button class="${state.quickType === 'entrada' ? '' : 'secondary'}" onclick="setQuickType('entrada')">${state.lang === 'es' ? 'Entrada +1' : 'In +1'}</button>
+    <button class="${state.quickType === 'salida_venta' ? '' : 'secondary'}" onclick="setQuickType('salida_venta')">${t().labels.saleMinus}</button>
+    <button class="${state.quickType === 'salida_uso_interno' ? '' : 'secondary'}" onclick="setQuickType('salida_uso_interno')">${t().labels.internalMinus}</button>
+    <button class="${state.quickType === 'entrada' ? '' : 'secondary'}" onclick="setQuickType('entrada')">${t().labels.inPlus}</button>
   `;
 
   if (!top.length) {
@@ -201,7 +290,7 @@ function renderQuickProducts(products) {
 
   $('quickProducts').innerHTML = top
     .map(
-      (p) => `<div class="quick-product"><h4>${p.name}</h4><small>Stock: ${p.current_stock} | Min: ${p.min_stock}</small><div class="quick-actions"><button onclick="quickMove(${p.id}, 1)">${state.quickType === 'entrada' ? '+1' : '-1'}</button><button class="secondary" onclick="openMovementFor(${p.id})">${state.lang === 'es' ? 'Abrir' : 'Open'}</button></div></div>`
+      (p) => `<div class="quick-product"><h4>${p.name}</h4><small>${t().labels.stock}: ${p.current_stock} | ${t().labels.min}: ${p.min_stock}</small><div class="quick-actions"><button onclick="quickMove(${p.id}, 1)">${state.quickType === 'entrada' ? '+1' : '-1'}</button><button class="secondary" onclick="openMovementFor(${p.id})">${t().labels.open}</button></div></div>`
     )
     .join('');
 }
@@ -254,7 +343,7 @@ $('openQuickMovement').addEventListener('click', () => {
 $('exportExcelBtn').addEventListener('click', async () => {
   $('exportExcelBtn').textContent = t().exporting;
   window.location.href = '/api/export/excel';
-  setTimeout(() => ($('exportExcelBtn').textContent = 'Export Excel'), 1000);
+  setTimeout(() => ($('exportExcelBtn').textContent = t().labels.export), 1000);
 });
 
 $('loginForm').addEventListener('submit', async (e) => {
