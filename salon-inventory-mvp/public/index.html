@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#6d28d9" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Salon Inventory" />
+    <title>Salon Inventory</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://unpkg.com/html5-qrcode" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div id="loginView" class="centered">
+      <form id="loginForm" class="card auth-card">
+        <h1>✨ Salon Inventory</h1>
+        <p id="loginSubtitle">Sign in to continue / Inicia sesión para continuar</p>
+        <input id="username" placeholder="Usuario / User" required autocomplete="username" />
+        <input type="password" id="password" placeholder="Contraseña / Password" required autocomplete="current-password" />
+        <button type="submit" id="loginBtn">Entrar / Login</button>
+      </form>
+    </div>
+
+    <div id="appView" class="hidden">
+      <header class="topbar">
+        <div>
+          <h2 id="titleMain">Salon Inventory</h2>
+          <small id="whoami"></small>
+        </div>
+        <div class="topbar-actions">
+          <select id="langSelect" class="lang-select">
+            <option value="es">ES</option>
+            <option value="en">EN</option>
+          </select>
+          <button id="exportExcelBtn" class="secondary">Export Excel</button>
+          <button id="openQuickMovement" class="secondary">+ Movimiento</button>
+          <button id="logoutBtn" class="secondary">Salir</button>
+        </div>
+      </header>
+
+      <div id="iosInstallHint" class="ios-hint hidden"></div>
+
+      <nav class="tabs" aria-label="Main navigation">
+        <button data-tab="dashboard" class="tab active" data-i18n="tab.dashboard">Dashboard</button>
+        <button data-tab="products" class="tab" data-i18n="tab.products">Productos</button>
+        <button data-tab="movements" class="tab" data-i18n="tab.movements">Movimientos</button>
+        <button data-tab="alerts" class="tab" data-i18n="tab.alerts">Alertas</button>
+      </nav>
+
+      <main>
+        <section id="dashboard" class="tab-pane active"></section>
+
+        <section id="products" class="tab-pane">
+          <div class="card">
+            <h3 data-i18n="product.formTitle">Nuevo / Editar producto</h3>
+            <form id="productForm" class="grid-form">
+              <input type="hidden" id="product_id" />
+              <input id="name" placeholder="Nombre" required />
+              <input id="brand" placeholder="Marca" />
+              <input id="category" placeholder="Categoría" />
+              <div class="inline-field">
+                <input id="barcode" placeholder="Código de barras" />
+                <button type="button" id="scanBtn" class="secondary">📷 Escanear</button>
+              </div>
+              <input id="unit" placeholder="Unidad" value="unidad" />
+              <input id="cost" type="number" step="0.01" placeholder="Costo" />
+              <input id="sale_price" type="number" step="0.01" placeholder="Precio venta" />
+              <input id="initial_stock" type="number" placeholder="Stock inicial" />
+              <input id="min_stock" type="number" placeholder="Stock mínimo" />
+              <input id="target_stock" type="number" placeholder="Stock objetivo" />
+              <div class="actions">
+                <button type="submit" data-i18n="common.save">Guardar</button>
+                <button type="button" id="clearProduct" class="secondary" data-i18n="common.clear">Limpiar</button>
+              </div>
+            </form>
+            <div id="scannerWrap" class="hidden">
+              <div id="reader"></div>
+              <button id="closeScanner" class="secondary">Cerrar scanner</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3 data-i18n="product.catalog">Catálogo</h3>
+            <input id="searchProduct" placeholder="Buscar por nombre/marca/categoría" />
+            <div class="table-wrap"><table id="productsTable"></table></div>
+          </div>
+        </section>
+
+        <section id="movements" class="tab-pane">
+          <div class="card">
+            <h3 data-i18n="movement.quick">Atajos rápidos</h3>
+            <p class="muted" data-i18n="movement.quickSub">Selecciona producto y registra en 1 toque.</p>
+            <div id="quickMovement" class="quick-movement"></div>
+            <div id="quickProducts" class="quick-products"></div>
+          </div>
+
+          <div class="card" id="movementCard">
+            <h3 data-i18n="movement.title">Registrar movimiento</h3>
+            <form id="movementForm" class="grid-form">
+              <select id="movement_product_id" required></select>
+              <select id="movement_type" required>
+                <option value="entrada">Entrada</option>
+                <option value="salida_venta">Salida por venta</option>
+                <option value="salida_uso_interno">Salida uso interno</option>
+              </select>
+              <input id="movement_qty" type="number" min="1" placeholder="Cantidad" required />
+              <input id="movement_notes" placeholder="Notas" />
+              <button type="submit" data-i18n="movement.submit">Registrar</button>
+            </form>
+          </div>
+          <div class="card">
+            <h3 data-i18n="movement.history">Historial reciente</h3>
+            <div class="table-wrap"><table id="movementsTable"></table></div>
+          </div>
+        </section>
+
+        <section id="alerts" class="tab-pane">
+          <div class="card">
+            <h3>⚠️ <span data-i18n="alerts.low">Stock bajo</span></h3>
+            <div class="table-wrap"><table id="alertsTable"></table></div>
+          </div>
+          <div class="card">
+            <h3>🛒 <span data-i18n="alerts.suggested">Compras sugeridas</span></h3>
+            <div class="table-wrap"><table id="suggestionsTable"></table></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

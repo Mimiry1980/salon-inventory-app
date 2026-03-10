@@ -1,0 +1,72 @@
+* { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #f5f3ff;
+  --card: #ffffff;
+  --text: #2e1065;
+  --muted: #6b6280;
+  --primary: #6d28d9;
+  --secondary: #ede9fe;
+  --danger: #be123c;
+}
+body { margin: 0; background: linear-gradient(180deg, #f8f5ff 0%, #f2ecff 100%); color: var(--text); font-size: 17px; line-height: 1.45; }
+.hidden { display: none !important; }
+.muted { color: var(--muted); margin-top: 0; }
+.centered { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 1rem; }
+.card { background: var(--card); border-radius: 18px; padding: 1rem; box-shadow: 0 10px 30px rgba(109,40,217,.10); margin-bottom: 1rem; border: 1px solid #efe7ff; }
+.auth-card { width: min(460px, 100%); }
+.auth-card h1 { margin: 0 0 .4rem; font-size: 1.6rem; }
+input, select, button { width: 100%; min-height: 50px; padding: .85rem .95rem; border-radius: 13px; border: 1px solid #ddd6fe; font-size: 1rem; }
+button { background: var(--primary); color: #fff; border: 0; cursor: pointer; font-weight: 600; }
+button.secondary { background: var(--secondary); color: #4c1d95; }
+button:active { transform: scale(.99); }
+button:hover { opacity: .94; }
+.topbar { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: max(.8rem, env(safe-area-inset-top)) 1rem .8rem; background: #fff; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 10px rgba(76,29,149,.08); }
+.topbar h2 { margin: 0; font-size: 1.1rem; }
+.topbar-actions { display: flex; gap: .5rem; align-items: center; }
+.topbar-actions button, .lang-select { width: auto; padding-inline: .9rem; min-height: 42px; }
+.ios-hint { margin: .6rem; padding: .7rem .9rem; background: #f3e8ff; border: 1px solid #ddd6fe; border-radius: 12px; font-size: .95rem; }
+.tabs { display: grid; grid-template-columns: repeat(4, minmax(110px, 1fr)); gap: .5rem; padding: .6rem; position: sticky; top: 72px; background: transparent; z-index: 9; overflow-x: auto; }
+.tab { background: #ede9fe; color: #4c1d95; border: none; min-height: 46px; white-space: nowrap; }
+.tab.active { background: var(--primary); color: #fff; }
+main { padding: .75rem; max-width: 1180px; margin: auto; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+.grid-form { display: grid; gap: .7rem; }
+.inline-field { display: grid; gap: .5rem; grid-template-columns: 1fr auto; }
+.inline-field button { width: auto; }
+.actions { display: grid; gap: .5rem; grid-template-columns: 1fr 1fr; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { text-align: left; padding: .7rem .6rem; border-bottom: 1px solid #f3edff; white-space: nowrap; }
+.stock-low { color: var(--danger); font-weight: 700; }
+.badge { padding: .25rem .5rem; border-radius: 999px; font-size: .8rem; background: #f5f3ff; }
+.kpis { display: grid; gap: .7rem; grid-template-columns: repeat(2, 1fr); }
+.kpi { background: #fff; border-radius: 14px; padding: 1rem; box-shadow: 0 6px 18px rgba(109,40,217,.08); border: 1px solid #efe7ff; }
+.kpi h4 { margin: 0; font-size: .85rem; color: var(--muted); font-weight: 600; }
+.kpi p { margin: .3rem 0 0; font-size: 1.55rem; font-weight: 700; }
+#reader { width: 100%; max-width: 420px; margin-top: .5rem; }
+.quick-movement { display: grid; gap: .55rem; grid-template-columns: repeat(3, minmax(90px, 1fr)); margin-bottom: .75rem; }
+.quick-movement button { min-height: 52px; }
+.quick-products { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.quick-product { border: 1px solid #ddd6fe; border-radius: 12px; background: #faf7ff; padding: .65rem; }
+.quick-product h4 { margin: 0 0 .4rem; font-size: .95rem; }
+.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+.quick-actions button { min-height: 44px; font-size: .93rem; }
+
+@media (min-width: 760px) {
+  .grid-form { grid-template-columns: repeat(2, 1fr); }
+  .grid-form > button, .actions, .inline-field { grid-column: span 2; }
+  .kpis { grid-template-columns: repeat(5, 1fr); }
+}
+
+@media (min-width: 900px) and (orientation: landscape) {
+  main { max-width: 1320px; }
+  #movements.tab-pane.active { display: grid; grid-template-columns: 1.1fr 1.1fr 1.4fr; gap: .8rem; align-items: start; }
+  #movements .card { margin-bottom: 0; }
+}
+
+@media (max-width: 720px) {
+  .topbar { flex-wrap: wrap; }
+  .topbar-actions { width: 100%; overflow-x: auto; }
+  .tabs { top: 122px; }
+}
