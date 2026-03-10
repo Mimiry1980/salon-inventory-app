@@ -9,6 +9,15 @@ const I18N = {
     common: { save: 'Guardar', clear: 'Limpiar', edit: 'Editar', del: 'Eliminar', yesDelete: '¿Eliminar producto?' },
     kpi: { products: 'Productos', units: 'Unidades', low: 'Stock bajo', today: 'Mov. hoy', value: 'Valor inventario' },
     movementType: { entrada: 'Entrada', salida_venta: 'Salida venta', salida_uso_interno: 'Uso interno' },
+    labels: {
+      quickBtn: '+ Movimiento',
+      logout: 'Salir',
+      search: 'Buscar por nombre/marca/categoría',
+      qty: 'Cantidad',
+      notes: 'Notas',
+      noProducts: 'No hay productos todavía. Crea uno en la pestaña Productos.',
+      export: 'Export Excel'
+    }
   },
   en: {
     who: (u, r) => `${u} (${r === 'admin' ? 'Admin' : 'Guest'})`,
@@ -17,7 +26,16 @@ const I18N = {
     tab: { dashboard: 'Dashboard', products: 'Products', movements: 'Movements', alerts: 'Alerts' },
     common: { save: 'Save', clear: 'Clear', edit: 'Edit', del: 'Delete', yesDelete: 'Delete product?' },
     kpi: { products: 'Products', units: 'Units', low: 'Low stock', today: 'Moves today', value: 'Inventory value' },
-    movementType: { entrada: 'In', salida_venta: 'Sold', salida_uso_interno: 'Internal use' },
+    movementType: { entrada: 'Stock In', salida_venta: 'Sale Out', salida_uso_interno: 'Internal Use' },
+    labels: {
+      quickBtn: '+ Movement',
+      logout: 'Logout',
+      search: 'Search by name/brand/category',
+      qty: 'Quantity',
+      notes: 'Notes',
+      noProducts: 'No products yet. Create one in the Products tab.',
+      export: 'Export Excel'
+    }
   },
 };
 
@@ -50,17 +68,30 @@ function setLang(lang) {
   state.lang = lang;
   localStorage.setItem('salon_lang', lang);
   document.documentElement.lang = lang;
-  $('[data-i18n="tab.dashboard"]');
   document.querySelectorAll('[data-i18n]').forEach((el) => {
     const keys = el.dataset.i18n.split('.');
     let value = I18N[lang];
     keys.forEach((k) => (value = value?.[k]));
     if (typeof value === 'string') el.textContent = value;
   });
+
+  $('openQuickMovement').textContent = t().labels.quickBtn;
+  $('logoutBtn').textContent = t().labels.logout;
+  $('searchProduct').placeholder = t().labels.search;
+  $('movement_qty').placeholder = t().labels.qty;
+  $('movement_notes').placeholder = t().labels.notes;
+  $('exportExcelBtn').textContent = t().labels.export;
+
+  const mt = $('movement_type');
+  mt.querySelector('option[value="entrada"]').textContent = t().movementType.entrada;
+  mt.querySelector('option[value="salida_venta"]').textContent = t().movementType.salida_venta;
+  mt.querySelector('option[value="salida_uso_interno"]').textContent = t().movementType.salida_uso_interno;
+
   if (state.me) $('whoami').textContent = t().who(state.me.username, state.me.role);
   $('iosInstallHint').textContent = t().installHint;
   renderProducts(state.products);
   renderMovements(state.movements);
+  renderQuickProducts(state.products);
 }
 
 async function refreshAll() {
@@ -118,7 +149,21 @@ function renderProducts(products) {
 }
 
 function renderProductsSelect(products) {
-  $('movement_product_id').innerHTML = products.map((p) => `<option value="${p.id}">${p.name} (stock: ${p.current_stock})</option>`).join('');
+  const sel = $('movement_product_id');
+  if (!products.length) {
+    sel.innerHTML = `<option value="">${t().labels.noProducts}</option>`;
+    sel.disabled = true;
+    $('movement_qty').disabled = true;
+    $('movement_notes').disabled = true;
+    $('movementForm').querySelector('button[type="submit"]').disabled = true;
+    return;
+  }
+
+  sel.disabled = false;
+  $('movement_qty').disabled = false;
+  $('movement_notes').disabled = false;
+  $('movementForm').querySelector('button[type="submit"]').disabled = false;
+  sel.innerHTML = products.map((p) => `<option value="${p.id}">${p.name} (stock: ${p.current_stock})</option>`).join('');
 }
 
 function renderMovements(rows) {
@@ -144,14 +189,19 @@ function renderSuggestions(rows) {
 function renderQuickProducts(products) {
   const top = [...products].sort((a, b) => (a.current_stock - a.min_stock) - (b.current_stock - b.min_stock)).slice(0, 8);
   $('quickMovement').innerHTML = `
-    <button class="${state.quickType === 'salida_venta' ? '' : 'secondary'}" onclick="setQuickType('salida_venta')">Venta -1</button>
-    <button class="${state.quickType === 'salida_uso_interno' ? '' : 'secondary'}" onclick="setQuickType('salida_uso_interno')">Uso -1</button>
-    <button class="${state.quickType === 'entrada' ? '' : 'secondary'}" onclick="setQuickType('entrada')">Entrada +1</button>
+    <button class="${state.quickType === 'salida_venta' ? '' : 'secondary'}" onclick="setQuickType('salida_venta')">${state.lang === 'es' ? 'Venta -1' : 'Sale -1'}</button>
+    <button class="${state.quickType === 'salida_uso_interno' ? '' : 'secondary'}" onclick="setQuickType('salida_uso_interno')">${state.lang === 'es' ? 'Uso -1' : 'Internal -1'}</button>
+    <button class="${state.quickType === 'entrada' ? '' : 'secondary'}" onclick="setQuickType('entrada')">${state.lang === 'es' ? 'Entrada +1' : 'In +1'}</button>
   `;
+
+  if (!top.length) {
+    $('quickProducts').innerHTML = `<div class="quick-product"><small>${t().labels.noProducts}</small></div>`;
+    return;
+  }
 
   $('quickProducts').innerHTML = top
     .map(
-      (p) => `<div class="quick-product"><h4>${p.name}</h4><small>Stock: ${p.current_stock} | Min: ${p.min_stock}</small><div class="quick-actions"><button onclick="quickMove(${p.id}, 1)">${state.quickType === 'entrada' ? '+1' : '-1'}</button><button class="secondary" onclick="openMovementFor(${p.id})">Abrir</button></div></div>`
+      (p) => `<div class="quick-product"><h4>${p.name}</h4><small>Stock: ${p.current_stock} | Min: ${p.min_stock}</small><div class="quick-actions"><button onclick="quickMove(${p.id}, 1)">${state.quickType === 'entrada' ? '+1' : '-1'}</button><button class="secondary" onclick="openMovementFor(${p.id})">${state.lang === 'es' ? 'Abrir' : 'Open'}</button></div></div>`
     )
     .join('');
 }
@@ -261,6 +311,7 @@ $('clearProduct').addEventListener('click', () => {
 
 $('movementForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!state.products.length) return;
   await api('/api/movements', {
     method: 'POST',
     body: JSON.stringify({
