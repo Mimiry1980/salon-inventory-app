@@ -190,6 +190,11 @@ function setLang(lang) {
   renderProducts(state.products);
   renderMovements(state.movements);
   renderQuickProducts(state.products);
+
+  // Re-render dynamic dashboard/alerts tables in selected language
+  if (state.me?.authenticated || state.me?.username) {
+    refreshAll().catch(() => {});
+  }
 }
 
 async function refreshAll() {
