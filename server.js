@@ -15,7 +15,9 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Gisbe!2026Salon#';
 const GUEST_USER = process.env.GUEST_USER || 'Invitado';
 const GUEST_PASSWORD = process.env.GUEST_PASSWORD || 'Invitado!2026Salon#';
 
-const dbPath = path.join(__dirname, 'data', 'inventory.db');
+const dataDir = path.join(__dirname, 'data');
+fs.mkdirSync(dataDir, { recursive: true });
+const dbPath = path.join(dataDir, 'inventory.db');
 const db = new Database(dbPath);
 
 function initDb() {
