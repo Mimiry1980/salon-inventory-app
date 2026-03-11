@@ -11,7 +11,7 @@ const I18N = {
     movementType: { entrada: 'Entrada', salida_venta: 'Salida venta', salida_uso_interno: 'Uso interno' },
     product: { formTitle: 'Nuevo / Editar producto', catalog: 'Catálogo' },
     movement: { quick: 'Atajos rápidos', quickSub: 'Selecciona producto y registra en 1 toque.', title: 'Registrar movimiento', submit: 'Registrar', history: 'Historial reciente' },
-    alerts: { low: 'Stock bajo', suggested: 'Compras sugeridas' },
+    alerts: { low: 'Stock bajo', exp1: 'Vencen en 1 mes', exp2: 'Vencen en 2 meses', suggested: 'Compras sugeridas' },
     labels: {
       loginSubtitle: 'Inicia sesión para continuar',
       username: 'Usuario',
@@ -31,6 +31,8 @@ const I18N = {
       initialStock: 'Stock inicial',
       minStock: 'Stock mínimo',
       targetStock: 'Stock objetivo',
+      expiresAt: 'Fecha de vencimiento',
+      daysToExpire: 'Días para vencer',
       closeScanner: 'Cerrar scanner',
       search: 'Buscar por nombre/marca/categoría',
       qty: 'Cantidad',
@@ -65,7 +67,7 @@ const I18N = {
     movementType: { entrada: 'Stock In', salida_venta: 'Sale Out', salida_uso_interno: 'Internal Use' },
     product: { formTitle: 'New / Edit product', catalog: 'Catalog' },
     movement: { quick: 'Quick actions', quickSub: 'Select a product and record in one tap.', title: 'Record movement', submit: 'Save movement', history: 'Recent history' },
-    alerts: { low: 'Low stock', suggested: 'Suggested purchases' },
+    alerts: { low: 'Low stock', exp1: 'Expiring in 1 month', exp2: 'Expiring in 2 months', suggested: 'Suggested purchases' },
     labels: {
       loginSubtitle: 'Sign in to continue',
       username: 'Username',
@@ -85,6 +87,8 @@ const I18N = {
       initialStock: 'Initial stock',
       minStock: 'Minimum stock',
       targetStock: 'Target stock',
+      expiresAt: 'Expiry date',
+      daysToExpire: 'Days to expire',
       closeScanner: 'Close scanner',
       search: 'Search by name/brand/category',
       qty: 'Quantity',
@@ -169,6 +173,7 @@ function setLang(lang) {
   $('initial_stock').placeholder = t().labels.initialStock;
   $('min_stock').placeholder = t().labels.minStock;
   $('target_stock').placeholder = t().labels.targetStock;
+  $('expires_at').placeholder = t().labels.expiresAt;
   $('closeScanner').textContent = t().labels.closeScanner;
 
   $('searchProduct').placeholder = t().labels.search;
@@ -192,6 +197,7 @@ async function refreshAll() {
   state.movements = await api('/api/movements');
   const dashboard = await api('/api/dashboard');
   const alerts = await api('/api/alerts/low-stock');
+  const expiring = await api('/api/alerts/expiring');
   const suggestions = await api('/api/purchases/suggested');
 
   renderDashboard(dashboard);
@@ -199,6 +205,7 @@ async function refreshAll() {
   renderProductsSelect(state.products);
   renderMovements(state.movements);
   renderAlerts(alerts);
+  renderExpiring(expiring.oneMonth || [], expiring.twoMonths || []);
   renderSuggestions(suggestions);
   renderQuickProducts(state.products);
 }
@@ -268,6 +275,12 @@ function renderMovements(rows) {
 
 function renderAlerts(rows) {
   $('alertsTable').innerHTML = `<tr><th>${t().labels.product}</th><th>${t().labels.stock}</th><th>${t().labels.min}</th></tr>${rows.map((p) => `<tr><td>${p.name}</td><td class='stock-low'>${p.current_stock}</td><td>${p.min_stock}</td></tr>`).join('') || `<tr><td colspan="3">${t().labels.noAlerts}</td></tr>`}`;
+}
+
+function renderExpiring(oneMonth, twoMonths) {
+  const row = (p) => `<tr><td>${p.name}</td><td>${p.expires_at || '-'}</td><td>${p.days_to_expire}</td></tr>`;
+  $('expiring1Table').innerHTML = `<tr><th>${t().labels.product}</th><th>${t().labels.expiresAt}</th><th>${t().labels.daysToExpire}</th></tr>${oneMonth.map(row).join('') || `<tr><td colspan="3">${t().labels.noAlerts}</td></tr>`}`;
+  $('expiring2Table').innerHTML = `<tr><th>${t().labels.product}</th><th>${t().labels.expiresAt}</th><th>${t().labels.daysToExpire}</th></tr>${twoMonths.map(row).join('') || `<tr><td colspan="3">${t().labels.noAlerts}</td></tr>`}`;
 }
 
 function renderSuggestions(rows) {
@@ -390,6 +403,7 @@ $('productForm').addEventListener('submit', async (e) => {
     initial_stock: $('initial_stock').value,
     min_stock: $('min_stock').value,
     target_stock: $('target_stock').value,
+    expires_at: $('expires_at').value || null,
   };
 
   const id = $('product_id').value;

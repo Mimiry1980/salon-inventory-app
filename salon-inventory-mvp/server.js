@@ -40,6 +40,7 @@ function initDb() {
       min_stock INTEGER DEFAULT 0,
       target_stock INTEGER DEFAULT 0,
       initial_stock INTEGER DEFAULT 0,
+      expires_at TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -56,9 +57,14 @@ function initDb() {
     );
   `);
 
-  const cols = db.prepare(`PRAGMA table_info(movements)`).all();
-  if (!cols.some((c) => c.name === 'created_by')) {
+  const movementCols = db.prepare(`PRAGMA table_info(movements)`).all();
+  if (!movementCols.some((c) => c.name === 'created_by')) {
     db.exec(`ALTER TABLE movements ADD COLUMN created_by TEXT DEFAULT ''`);
+  }
+
+  const productCols = db.prepare(`PRAGMA table_info(products)`).all();
+  if (!productCols.some((c) => c.name === 'expires_at')) {
+    db.exec(`ALTER TABLE products ADD COLUMN expires_at TEXT`);
   }
 
   const upsertUser = db.prepare(`
@@ -212,13 +218,13 @@ app.get('/api/products/:id', authRequired, (req, res) => {
 });
 
 app.post('/api/products', authRequired, (req, res) => {
-  const { name, brand, category, barcode, unit, cost, sale_price, min_stock, target_stock, initial_stock } = req.body;
+  const { name, brand, category, barcode, unit, cost, sale_price, min_stock, target_stock, initial_stock, expires_at } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required / Nombre obligatorio' });
 
   const info = db
     .prepare(
-      `INSERT INTO products (name, brand, category, barcode, unit, cost, sale_price, min_stock, target_stock, initial_stock)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO products (name, brand, category, barcode, unit, cost, sale_price, min_stock, target_stock, initial_stock, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       name,
@@ -230,7 +236,8 @@ app.post('/api/products', authRequired, (req, res) => {
       Number(sale_price || 0),
       Number(min_stock || 0),
       Number(target_stock || 0),
-      Number(initial_stock || 0)
+      Number(initial_stock || 0),
+      expires_at || null
     );
 
   const created = db.prepare('SELECT * FROM products WHERE id = ?').get(info.lastInsertRowid);
@@ -254,12 +261,13 @@ app.put('/api/products/:id', authRequired, (req, res) => {
     min_stock: Number(req.body.min_stock ?? existing.min_stock),
     target_stock: Number(req.body.target_stock ?? existing.target_stock),
     initial_stock: Number(req.body.initial_stock ?? existing.initial_stock),
+    expires_at: req.body.expires_at ?? existing.expires_at,
   };
 
   db.prepare(
     `UPDATE products
      SET name = ?, brand = ?, category = ?, barcode = ?, unit = ?,
-         cost = ?, sale_price = ?, min_stock = ?, target_stock = ?, initial_stock = ?,
+         cost = ?, sale_price = ?, min_stock = ?, target_stock = ?, initial_stock = ?, expires_at = ?,
          updated_at = datetime('now')
      WHERE id = ?`
   ).run(
@@ -273,6 +281,7 @@ app.put('/api/products/:id', authRequired, (req, res) => {
     updated.min_stock,
     updated.target_stock,
     updated.initial_stock,
+    updated.expires_at || null,
     id
   );
 
@@ -358,6 +367,27 @@ app.get('/api/purchases/suggested', authRequired, (req, res) => {
   res.json(suggestions);
 });
 
+app.get('/api/alerts/expiring', authRequired, (req, res) => {
+  const products = getProductsWithStock().filter((p) => !!p.expires_at);
+  const now = new Date();
+
+  const withDays = products
+    .map((p) => {
+      const d = new Date(p.expires_at);
+      if (Number.isNaN(d.getTime())) return null;
+      const days = Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return { ...p, days_to_expire: days };
+    })
+    .filter(Boolean)
+    .filter((p) => p.days_to_expire >= 0)
+    .sort((a, b) => a.days_to_expire - b.days_to_expire);
+
+  const oneMonth = withDays.filter((p) => p.days_to_expire <= 30);
+  const twoMonths = withDays.filter((p) => p.days_to_expire > 30 && p.days_to_expire <= 60);
+
+  res.json({ oneMonth, twoMonths });
+});
+
 app.get('/api/dashboard', authRequired, (req, res) => {
   const products = getProductsWithStock();
   const lowStock = products.filter((p) => p.current_stock <= p.min_stock);
@@ -393,6 +423,7 @@ app.get('/api/export/excel', authRequired, (req, res) => {
     sale_price: Number(p.sale_price || 0),
     min_stock: p.min_stock,
     target_stock: p.target_stock,
+    expires_at: p.expires_at || '',
     current_stock: p.current_stock,
     stock_value_cost: Number(p.current_stock || 0) * Number(p.cost || 0),
   }));

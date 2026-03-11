@@ -74,6 +74,7 @@
               <input id="initial_stock" type="number" placeholder="Stock inicial" />
               <input id="min_stock" type="number" placeholder="Stock mínimo" />
               <input id="target_stock" type="number" placeholder="Stock objetivo" />
+              <input id="expires_at" type="date" placeholder="Fecha de vencimiento" />
               <div class="actions">
                 <button type="submit" data-i18n="common.save">Guardar</button>
                 <button type="button" id="clearProduct" class="secondary" data-i18n="common.clear">Limpiar</button>
@@ -123,6 +124,14 @@
           <div class="card">
             <h3>⚠️ <span data-i18n="alerts.low">Stock bajo</span></h3>
             <div class="table-wrap"><table id="alertsTable"></table></div>
+          </div>
+          <div class="card">
+            <h3>⏰ <span data-i18n="alerts.exp1">Vencen en 1 mes</span></h3>
+            <div class="table-wrap"><table id="expiring1Table"></table></div>
+          </div>
+          <div class="card">
+            <h3>📅 <span data-i18n="alerts.exp2">Vencen en 2 meses</span></h3>
+            <div class="table-wrap"><table id="expiring2Table"></table></div>
           </div>
           <div class="card">
             <h3>🛒 <span data-i18n="alerts.suggested">Compras sugeridas</span></h3>
