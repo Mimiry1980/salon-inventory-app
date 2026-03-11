@@ -6,7 +6,7 @@ const I18N = {
     installHint: 'Instalar en iPad: Safari → compartir (□↑) → Agregar a pantalla de inicio.',
     exporting: 'Exportando Excel...',
     tab: { dashboard: 'Dashboard', products: 'Productos', movements: 'Movimientos', alerts: 'Alertas' },
-    common: { save: 'Guardar', clear: 'Limpiar', edit: 'Editar', del: 'Eliminar', yesDelete: '¿Eliminar producto?' },
+    common: { save: 'Guardar', clear: 'Limpiar', edit: 'Editar', del: 'Eliminar', yesDelete: '¿Eliminar producto?', yesDeleteMove: '¿Eliminar este movimiento?' },
     kpi: { products: 'Productos', units: 'Unidades', low: 'Stock bajo', today: 'Mov. hoy', value: 'Valor inventario' },
     movementType: { entrada: 'Entrada', salida_venta: 'Salida venta', salida_uso_interno: 'Uso interno' },
     product: { formTitle: 'Nuevo / Editar producto', catalog: 'Catálogo' },
@@ -49,6 +49,7 @@ const I18N = {
       qtyShort: 'Cant.',
       user: 'Usuario',
       open: 'Abrir',
+      deleteMove: 'Borrar mov.',
       saleMinus: 'Venta -1',
       internalMinus: 'Uso -1',
       inPlus: 'Entrada +1'
@@ -59,7 +60,7 @@ const I18N = {
     installHint: 'Install on iPad: Safari → Share (□↑) → Add to Home Screen.',
     exporting: 'Exporting Excel...',
     tab: { dashboard: 'Dashboard', products: 'Products', movements: 'Movements', alerts: 'Alerts' },
-    common: { save: 'Save', clear: 'Clear', edit: 'Edit', del: 'Delete', yesDelete: 'Delete product?' },
+    common: { save: 'Save', clear: 'Clear', edit: 'Edit', del: 'Delete', yesDelete: 'Delete product?', yesDeleteMove: 'Delete this movement?' },
     kpi: { products: 'Products', units: 'Units', low: 'Low stock', today: 'Moves today', value: 'Inventory value' },
     movementType: { entrada: 'Stock In', salida_venta: 'Sale Out', salida_uso_interno: 'Internal Use' },
     product: { formTitle: 'New / Edit product', catalog: 'Catalog' },
@@ -102,6 +103,7 @@ const I18N = {
       qtyShort: 'Qty',
       user: 'User',
       open: 'Open',
+      deleteMove: 'Delete move',
       saleMinus: 'Sale -1',
       internalMinus: 'Internal -1',
       inPlus: 'In +1'
@@ -259,8 +261,8 @@ function renderProductsSelect(products) {
 
 function renderMovements(rows) {
   $('movementsTable').innerHTML = `
-    <tr><th>${t().labels.date}</th><th>${t().labels.product}</th><th>${t().labels.type}</th><th>${t().labels.qtyShort}</th><th>${t().labels.user}</th><th>${t().labels.notes}</th></tr>
-    ${rows.map((m) => `<tr><td>${formatDate(m.created_at)}</td><td>${m.product_name}</td><td><span class='badge'>${t().movementType[m.type] || m.type}</span></td><td>${m.qty}</td><td>${m.created_by || '-'}</td><td>${m.notes || ''}</td></tr>`).join('')}
+    <tr><th>${t().labels.date}</th><th>${t().labels.product}</th><th>${t().labels.type}</th><th>${t().labels.qtyShort}</th><th>${t().labels.user}</th><th>${t().labels.notes}</th><th>${t().labels.actions}</th></tr>
+    ${rows.map((m) => `<tr><td>${formatDate(m.created_at)}</td><td>${m.product_name}</td><td><span class='badge'>${t().movementType[m.type] || m.type}</span></td><td>${m.qty}</td><td>${m.created_by || '-'}</td><td>${m.notes || ''}</td><td>${state.me?.role === 'admin' ? `<button onclick="deleteMovement(${m.id})">${t().labels.deleteMove}</button>` : ''}</td></tr>`).join('')}
   `;
 }
 
@@ -330,6 +332,12 @@ window.editProduct = (p) => {
 window.deleteProduct = async (id) => {
   if (!confirm(t().common.yesDelete)) return;
   await api(`/api/products/${id}`, { method: 'DELETE' });
+  await refreshAll();
+};
+
+window.deleteMovement = async (id) => {
+  if (!confirm(t().common.yesDeleteMove)) return;
+  await api(`/api/movements/${id}`, { method: 'DELETE' });
   await refreshAll();
 };
 

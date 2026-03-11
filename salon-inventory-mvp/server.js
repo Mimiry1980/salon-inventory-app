@@ -326,6 +326,15 @@ app.post('/api/movements', authRequired, (req, res) => {
   res.status(201).json({ ...movement, current_stock: getProductCurrentStock(productId) });
 });
 
+app.delete('/api/movements/:id', authRequired, adminRequired, (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT id FROM movements WHERE id = ?').get(id);
+  if (!existing) return res.status(404).json({ error: 'Movement not found / Movimiento no encontrado' });
+
+  db.prepare('DELETE FROM movements WHERE id = ?').run(id);
+  res.json({ ok: true });
+});
+
 app.get('/api/alerts/low-stock', authRequired, (req, res) => {
   const rows = getProductsWithStock().filter((p) => p.current_stock <= p.min_stock);
   res.json(rows);
