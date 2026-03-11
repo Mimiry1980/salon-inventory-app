@@ -262,7 +262,7 @@ function renderProductsSelect(products) {
 function renderMovements(rows) {
   $('movementsTable').innerHTML = `
     <tr><th>${t().labels.date}</th><th>${t().labels.product}</th><th>${t().labels.type}</th><th>${t().labels.qtyShort}</th><th>${t().labels.user}</th><th>${t().labels.notes}</th><th>${t().labels.actions}</th></tr>
-    ${rows.map((m) => `<tr><td>${formatDate(m.created_at)}</td><td>${m.product_name}</td><td><span class='badge'>${t().movementType[m.type] || m.type}</span></td><td>${m.qty}</td><td>${m.created_by || '-'}</td><td>${m.notes || ''}</td><td>${state.me?.role === 'admin' ? `<button onclick="deleteMovement(${m.id})">${t().labels.deleteMove}</button>` : ''}</td></tr>`).join('')}
+    ${rows.map((m) => `<tr><td>${formatDate(m.created_at)}</td><td>${m.product_name}</td><td><span class='badge'>${t().movementType[m.type] || m.type}</span></td><td>${m.qty}</td><td>${m.created_by || '-'}</td><td>${m.notes || ''}</td><td><button onclick="deleteMovement(${m.id})">${t().labels.deleteMove}</button></td></tr>`).join('') || `<tr><td colspan="7">${state.lang === 'es' ? 'Sin movimientos todavía.' : 'No movements yet.'}</td></tr>`}
   `;
 }
 
