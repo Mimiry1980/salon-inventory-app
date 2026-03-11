@@ -1,4 +1,4 @@
-const CACHE_NAME = 'salon-inventory-shell-v3';
+const CACHE_NAME = 'salon-inventory-shell-v4';
 const SHELL_ASSETS = [
   '/',
   '/index.html',
@@ -38,6 +38,21 @@ self.addEventListener('fetch', (event) => {
           headers: { 'Content-Type': 'application/json' },
         })
       )
+    );
+    return;
+  }
+
+  // Network-first for app shell files to avoid stale UI after deploy
+  const networkFirst = ['/', '/index.html', '/app.js', '/styles.css'].includes(url.pathname);
+  if (networkFirst) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('/index.html')))
     );
     return;
   }
