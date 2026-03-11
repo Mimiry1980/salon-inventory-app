@@ -160,6 +160,8 @@ function setLang(lang) {
   $('barcode').placeholder = t().labels.barcode;
   $('scanBtn').textContent = t().labels.scan;
   $('unit').placeholder = t().labels.unit;
+  if (lang === 'en' && $('unit').value.trim().toLowerCase() === 'unidad') $('unit').value = 'unit';
+  if (lang === 'es' && $('unit').value.trim().toLowerCase() === 'unit') $('unit').value = 'unidad';
   $('cost').placeholder = t().labels.cost;
   $('sale_price').placeholder = t().labels.salePrice;
   $('initial_stock').placeholder = t().labels.initialStock;
