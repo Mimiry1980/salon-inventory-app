@@ -339,6 +339,9 @@ window.openMovementFor = (productId) => {
 };
 
 window.editProduct = (p) => {
+  // Ensure edit mode uses PUT instead of creating a duplicate product
+  $('product_id').value = p.id ?? '';
+
   Object.keys(p).forEach((k) => {
     const el = $(k);
     if (el) el.value = p[k] ?? '';
