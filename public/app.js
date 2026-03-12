@@ -227,11 +227,13 @@ async function refreshBackupStatus() {
 
   try {
     const s = await api('/api/backup/status');
-    const latest = s.latest ? formatDate(s.latest.created_at.replace('T', ' ').slice(0, 19)) : (state.lang === 'es' ? 'Sin backups' : 'No backups');
+    const latest = s.latest
+      ? (s.latest.created_at_miami || formatDate(s.latest.created_at.replace('T', ' ').slice(0, 19)))
+      : (state.lang === 'es' ? 'Sin backups' : 'No backups');
     const schedule = (s.schedule_local || []).join(', ');
     el.textContent = state.lang === 'es'
-      ? `Backup automático: ${schedule} | Último: ${latest}`
-      : `Auto backup: ${schedule} | Last: ${latest}`;
+      ? `Backup automático (Miami): ${schedule} | Último: ${latest}`
+      : `Auto backup (Miami): ${schedule} | Last: ${latest}`;
     el.classList.remove('hidden');
   } catch {
     el.classList.add('hidden');

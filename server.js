@@ -487,12 +487,32 @@ app.get('/api/backup/status', authRequired, adminRequired, (req, res) => {
   const files = listBackups();
   const latest = files[0] || null;
   const schedule = ['02:00', '08:00', '14:00', '20:00'];
+
+  const fmtMiami = (ms) =>
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZoneName: 'short',
+    }).format(new Date(ms));
+
   res.json({
     latest: latest
-      ? { name: latest.name, created_at: new Date(latest.mtimeMs).toISOString(), size: latest.size }
+      ? {
+          name: latest.name,
+          created_at: new Date(latest.mtimeMs).toISOString(),
+          created_at_miami: fmtMiami(latest.mtimeMs),
+          size: latest.size,
+        }
       : null,
     count: files.length,
     schedule_local: schedule,
+    timezone_label: 'America/New_York',
   });
 });
 
