@@ -159,6 +159,8 @@ function setLang(lang) {
   $('openQuickMovement').textContent = t().labels.quickBtn;
   $('logoutBtn').textContent = t().labels.logout;
   $('exportExcelBtn').textContent = t().labels.export;
+  $('backupNowBtn').textContent = state.lang === 'es' ? 'Backup ahora' : 'Backup now';
+  $('downloadBackupBtn').textContent = state.lang === 'es' ? 'Descargar backup' : 'Download backup';
 
   $('name').placeholder = t().labels.productName;
   $('brand').placeholder = t().labels.brand;
@@ -213,6 +215,27 @@ async function refreshAll() {
   renderExpiring(expiring.oneMonth || [], expiring.twoMonths || []);
   renderSuggestions(suggestions);
   renderQuickProducts(state.products);
+
+  if (state.me?.role === 'admin') {
+    await refreshBackupStatus();
+  }
+}
+
+async function refreshBackupStatus() {
+  const el = $('backupStatusHint');
+  if (!el) return;
+
+  try {
+    const s = await api('/api/backup/status');
+    const latest = s.latest ? formatDate(s.latest.created_at.replace('T', ' ').slice(0, 19)) : (state.lang === 'es' ? 'Sin backups' : 'No backups');
+    const schedule = (s.schedule_local || []).join(', ');
+    el.textContent = state.lang === 'es'
+      ? `Backup automático: ${schedule} | Último: ${latest}`
+      : `Auto backup: ${schedule} | Last: ${latest}`;
+    el.classList.remove('hidden');
+  } catch {
+    el.classList.add('hidden');
+  }
 }
 
 function renderDashboard(d) {
@@ -377,6 +400,20 @@ $('exportExcelBtn').addEventListener('click', async () => {
   setTimeout(() => ($('exportExcelBtn').textContent = t().labels.export), 1000);
 });
 
+$('backupNowBtn').addEventListener('click', async () => {
+  try {
+    await api('/api/backup/now', { method: 'POST' });
+    await refreshBackupStatus();
+    alert(state.lang === 'es' ? 'Backup creado ✅' : 'Backup created ✅');
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+$('downloadBackupBtn').addEventListener('click', async () => {
+  window.location.href = '/api/backup/db';
+});
+
 $('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
@@ -384,6 +421,7 @@ $('loginForm').addEventListener('submit', async (e) => {
     const me = await api('/api/me');
     state.me = me;
     $('whoami').textContent = t().who(me.username, me.role);
+    applyRoleUI();
     $('loginView').classList.add('hidden');
     $('appView').classList.remove('hidden');
     await refreshAll();
@@ -479,6 +517,13 @@ function maybeShowIosInstallHint() {
   if (isIOS && !isStandalone) $('iosInstallHint').classList.remove('hidden');
 }
 
+function applyRoleUI() {
+  const isAdmin = state.me?.role === 'admin';
+  $('backupNowBtn').classList.toggle('hidden', !isAdmin);
+  $('downloadBackupBtn').classList.toggle('hidden', !isAdmin);
+  $('backupStatusHint').classList.toggle('hidden', !isAdmin);
+}
+
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   try { await navigator.serviceWorker.register('/sw.js'); } catch {}
@@ -488,11 +533,13 @@ async function registerServiceWorker() {
   await registerServiceWorker();
   setLang(localStorage.getItem('salon_lang') || 'es');
   $('langSelect').value = state.lang;
+  applyRoleUI();
   try {
     const me = await api('/api/me');
     if (me.authenticated) {
       state.me = me;
       $('whoami').textContent = t().who(me.username, me.role);
+      applyRoleUI();
       $('loginView').classList.add('hidden');
       $('appView').classList.remove('hidden');
       await refreshAll();

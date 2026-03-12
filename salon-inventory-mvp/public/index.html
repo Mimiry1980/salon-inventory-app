@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png" />
     <link rel="stylesheet" href="/styles.css" />
     <script src="https://unpkg.com/html5-qrcode" defer></script>
-    <script src="/app.js?v=20260310e" defer></script>
+    <script src="/app.js?v=20260312a" defer></script>
   </head>
   <body>
     <div id="loginView" class="centered">
@@ -39,12 +39,15 @@
             <option value="en">EN</option>
           </select>
           <button id="exportExcelBtn" class="secondary">Export Excel</button>
+          <button id="backupNowBtn" class="secondary">Backup now</button>
+          <button id="downloadBackupBtn" class="secondary">Download backup</button>
           <button id="openQuickMovement" class="secondary">+ Movimiento</button>
           <button id="logoutBtn" class="secondary">Salir</button>
         </div>
       </header>
 
       <div id="iosInstallHint" class="ios-hint hidden"></div>
+      <div id="backupStatusHint" class="ios-hint hidden"></div>
 
       <nav class="tabs" aria-label="Main navigation">
         <button data-tab="dashboard" class="tab active" data-i18n="tab.dashboard">Dashboard</button>
