@@ -459,6 +459,13 @@ app.post('/api/backup/now', authRequired, adminRequired, (req, res) => {
   res.json({ ok: true });
 });
 
+// Download a full SQLite backup (admin only)
+app.get('/api/backup/db', authRequired, adminRequired, (req, res) => {
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  const filename = `inventory-backup-${stamp}.db`;
+  return res.download(dbPath, filename);
+});
+
 app.use((req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.listen(PORT, () => {
