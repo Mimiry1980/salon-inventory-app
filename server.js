@@ -458,7 +458,11 @@ app.post('/api/backup/now', authRequired, adminRequired, (req, res) => {
   backupDb();
   res.json({ ok: true });
 });
-
+app.get('/api/backup/db', authRequired, adminRequired, (req, res) => {
+const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+const filename = `inventory-backup-${stamp}.db`;
+return res.download(dbPath, filename);
+});
 app.use((req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.listen(PORT, () => {
