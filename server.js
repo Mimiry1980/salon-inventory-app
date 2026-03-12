@@ -123,48 +123,71 @@ function adminRequired(req, res, next) {
   return res.status(403).json({ error: 'Admin only / Solo administrador' });
 }
 
-function backupDb() {
+const backupsDir = path.join(__dirname, 'data', 'backups');
+
+function listBackups() {
+  fs.mkdirSync(backupsDir, { recursive: true });
+  return fs
+    .readdirSync(backupsDir)
+    .filter((f) => f.endsWith('.db'))
+    .map((f) => {
+      const full = path.join(backupsDir, f);
+      const st = fs.statSync(full);
+      return { name: f, full, mtimeMs: st.mtimeMs, size: st.size };
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+}
+
+function backupDb(reason = 'scheduled') {
   try {
-    const backupsDir = path.join(__dirname, 'data', 'backups');
     fs.mkdirSync(backupsDir, { recursive: true });
 
     const now = new Date();
     const stamp = now.toISOString().replace(/[:.]/g, '-');
     const target = path.join(backupsDir, `inventory-backup-${stamp}.db`);
 
+    // NOTE: Copy-only operation. Never mutates product/movement rows.
     fs.copyFileSync(dbPath, target);
 
-    const files = fs
-      .readdirSync(backupsDir)
-      .filter((f) => f.endsWith('.db'))
-      .map((f) => ({ name: f, full: path.join(backupsDir, f), mtime: fs.statSync(path.join(backupsDir, f)).mtimeMs }))
-      .sort((a, b) => b.mtime - a.mtime);
+    const files = listBackups();
+    // Keep last 30 backups
+    files.slice(30).forEach((f) => fs.unlinkSync(f.full));
 
-    files.slice(14).forEach((f) => fs.unlinkSync(f.full));
-    console.log(`🗄️ Backup created: ${target}`);
+    console.log(`🗄️ Backup created (${reason}): ${target}`);
+    return { ok: true, file: path.basename(target), path: target };
   } catch (error) {
     console.error('Backup failed:', error.message);
+    return { ok: false, error: error.message };
   }
 }
 
-function msUntilNextLocal(hour = 2, minute = 0) {
+function msUntilNextBackupRun(hours = [2, 8, 14, 20]) {
   const now = new Date();
-  const next = new Date();
-  next.setHours(hour, minute, 0, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
+  const candidates = hours.map((h) => {
+    const d = new Date(now);
+    d.setHours(h, 0, 0, 0);
+    if (d <= now) d.setDate(d.getDate() + 1);
+    return d;
+  });
+  const next = candidates.sort((a, b) => a - b)[0];
   return next - now;
 }
 
-function scheduleDailyBackup() {
-  const wait = msUntilNextLocal(2, 0);
-  setTimeout(() => {
-    backupDb();
-    setInterval(backupDb, 24 * 60 * 60 * 1000);
-  }, wait);
+function scheduleBackupsMultipleTimesPerDay() {
+  const run = () => {
+    backupDb('scheduled');
+    const wait = msUntilNextBackupRun([2, 8, 14, 20]);
+    setTimeout(run, wait);
+  };
+
+  const firstWait = msUntilNextBackupRun([2, 8, 14, 20]);
+  setTimeout(run, firstWait);
 }
 
 initDb();
-scheduleDailyBackup();
+// Initial safety snapshot at boot (copy-only)
+backupDb('startup');
+scheduleBackupsMultipleTimesPerDay();
 
 app.use(express.json());
 app.use(
@@ -455,14 +478,31 @@ app.get('/api/export/excel', authRequired, (req, res) => {
 });
 
 app.post('/api/backup/now', authRequired, adminRequired, (req, res) => {
-  backupDb();
-  res.json({ ok: true });
+  const result = backupDb('manual');
+  if (!result.ok) return res.status(500).json(result);
+  res.json(result);
 });
+
+app.get('/api/backup/status', authRequired, adminRequired, (req, res) => {
+  const files = listBackups();
+  const latest = files[0] || null;
+  const schedule = ['02:00', '08:00', '14:00', '20:00'];
+  res.json({
+    latest: latest
+      ? { name: latest.name, created_at: new Date(latest.mtimeMs).toISOString(), size: latest.size }
+      : null,
+    count: files.length,
+    schedule_local: schedule,
+  });
+});
+
+// Download a full SQLite backup (admin only)
 app.get('/api/backup/db', authRequired, adminRequired, (req, res) => {
-const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-const filename = `inventory-backup-${stamp}.db`;
-return res.download(dbPath, filename);
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  const filename = `inventory-backup-${stamp}.db`;
+  return res.download(dbPath, filename);
 });
+
 app.use((req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.listen(PORT, () => {
